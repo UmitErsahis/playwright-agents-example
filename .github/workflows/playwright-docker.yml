@@ -1,0 +1,41 @@
+name: Playwright Tests (Docker)
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Build Docker image
+      run: docker build -t playwright-agents-example .
+    
+    - name: Run Playwright tests in Docker
+      run: |
+        docker run --rm \
+          -v ${{ github.workspace }}/test-results:/app/test-results \
+          -v ${{ github.workspace }}/playwright-report:/app/playwright-report \
+          playwright-agents-example
+    
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: ${{ !cancelled() }}
+      with:
+        name: playwright-report-docker
+        path: playwright-report/
+        retention-days: 30
+    
+    - name: Upload test-results
+      uses: actions/upload-artifact@v4
+      if: ${{ !cancelled() }}
+      with:
+        name: test-results-docker
+        path: test-results/
+        retention-days: 7
