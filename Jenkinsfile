@@ -1,27 +1,31 @@
 pipeline {
-    agent {
-        docker {
-            image 'mcr.microsoft.com/playwright:v1.58.2-jammy'
-            args '-v ${WORKSPACE}:/app -w /app'
-        }
-    }
+    agent any
     
     stages {
-        stage('Install Dependencies') {
+        stage('Checkout') {
             steps {
-                sh 'npm ci'
+                checkout scm
             }
         }
         
-        stage('Install Playwright Browsers') {
+        stage('Build Docker Image') {
             steps {
-                sh 'npx playwright install --with-deps'
+                script {
+                    bat 'docker build -t playwright-agents-example .'
+                }
             }
         }
         
-        stage('Run Playwright Tests') {
+        stage('Run Playwright Tests in Docker') {
             steps {
-                sh 'npx playwright test'
+                script {
+                    bat '''
+                        docker run --rm ^
+                        -v %WORKSPACE%\\test-results:/app/test-results ^
+                        -v %WORKSPACE%\\playwright-report:/app/playwright-report ^
+                        playwright-agents-example
+                    '''
+                }
             }
         }
     }
